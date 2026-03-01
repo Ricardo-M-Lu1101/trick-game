@@ -1,390 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<!-- 核心：强制适配手机屏幕，禁止缩放溢出 -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style>
-  /* 全局重置：锁死手机屏幕大小，禁止滚动 */
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent; /* 去掉手机点击高亮 */
-  }
-  html, body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    position: relative;
-    font-family: system-ui, -apple-system, sans-serif;
-    background: #f5f5f5;
-  }
-
-  /* 标题适配手机：不会被状态栏挡住，大小合适 */
-  h2 {
-    text-align: center;
-    margin-top: 12vh;
-    font-size: clamp(20px, 6vw, 26px);
-    color: #333;
-  }
-
-  /* 核心逃跑按钮：手机触摸友好尺寸，不会太大 */
-  #trick-btn {
-    position: absolute;
-    padding: 14px 28px;
-    font-size: 17px;
-    background: pink;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    transition: all 0.15s ease;
-    touch-action: none; /* 禁止手机触摸默认行为 */
-    user-select: none;
-  }
-
-  /* 右下角功能按钮：手机适配，不挤、不误触 */
-  .func-btn {
-    position: fixed;
-    padding: 11px 0;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    z-index: 9999;
-    width: 115px;
-    text-align: center;
-    touch-action: manipulation;
-  }
-  #view-record {
-    bottom: 20px;
-    right: 15px;
-    background: #4CAF50;
-  }
-  #upload-record {
-    bottom: 68px;
-    right: 15px;
-    background: #2196F3;
-  }
-
-  /* 自动检查提示：适配手机位置 */
-  .auto-tip {
-    position: fixed;
-    bottom: 118px;
-    right: 15px;
-    background: #ff9800;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    z-index: 9999;
-  }
-
-  /* 记录弹窗：手机全屏适配，不溢出 */
-  .record-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-  }
-  .modal-content {
-    background: white;
-    padding: 25px 20px;
-    border-radius: 12px;
-    width: 92%;
-    max-height: 75vh;
-    overflow-y: auto;
-  }
-  .close-modal {
-    float: right;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-    line-height: 1;
-  }
-  .modal-content h3 {
-    margin-bottom: 20px;
-    font-size: 18px;
-  }
-  .record-item {
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 14px;
-    word-break: break-all;
-    line-height: 1.5;
-  }
-
-  /* 注册弹窗：手机全屏适配，输入框好点击 */
-  .register-modal {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.75);
-    z-index: 999999;
-    justify-content: center;
-    align-items: center;
-  }
-  .register-content {
-    background: white;
-    padding: 40px 25px;
-    border-radius: 12px;
-    width: 90%;
-    text-align: center;
-  }
-  .register-content h3 {
-    margin-bottom: 20px;
-    font-size: 19px;
-  }
-  .register-content input {
-    width: 100%;
-    padding: 14px;
-    margin: 20px 0;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-  }
-  .register-content button {
-    width: 100%;
-    padding: 13px 0;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-</style>
-</head>
-<body>
-  <h2>敢点我吗？😝</h2>
-  <button id="trick-btn">点我呀！</button>
-
-  <button class="func-btn" id="view-record">查看记录 📝</button>
-  <button class="func-btn" id="upload-record">一键上传 📤</button>
-  <div class="auto-tip" id="autoTip" style="display:none;">自动检查中...</div>
-
-  <!-- 记录弹窗 -->
-  <div class="record-modal" id="recordModal">
-    <div class="modal-content">
-      <span class="close-modal" id="closeModal">&times;</span>
-      <h3>操作记录</h3>
-      <div id="recordList"></div>
-    </div>
-  </div>
-
-  <!-- 注册弹窗 -->
-  <div class="register-modal" id="registerModal">
-    <div class="register-content">
-      <h3>请输入你的名字</h3>
-      <input type="text" id="userNameInput" placeholder="比如：小明" maxlength="10">
-      <br>
-      <button id="confirmNameBtn">确认</button>
-    </div>
-  </div>
-
-<script>
-  // ======================
-  // 已自动填充你修改后的腾讯文档表单提交链接，无需再修改！
-  // ======================
-  const COLLECT_URL = "https://docs.qq.com/form/submit/DQmp5ZG1mbUtOR2py";
-
-  // 基础变量
-  let userName = localStorage.getItem('currentUserName') || '';
-  let trickRecords = JSON.parse(localStorage.getItem('trickRecords')) || [];
-  let uploadedCount = parseInt(localStorage.getItem('uploadedCount') || 0);
-  const autoTip = document.getElementById('autoTip');
-  const btn = document.getElementById('trick-btn');
-
-  // ========== 注册逻辑 ==========
-  const registerModal = document.getElementById('registerModal');
-  const userNameInput = document.getElementById('userNameInput');
-  const confirmNameBtn = document.getElementById('confirmNameBtn');
-
-  window.onload = function () {
-    if (!userName) {
-      registerModal.style.display = 'flex';
-    } else {
-      addRecord('打开了整蛊页面！');
-      startAutoCheck(); // 启动自动检查上传
-    }
-  };
-
-  confirmNameBtn.onclick = function () {
-    const inputName = userNameInput.value.trim();
-    if (!inputName) {
-      alert('请输入你的名字哦！');
-      return;
-    }
-    userName = inputName;
-    localStorage.setItem('currentUserName', userName);
-    registerModal.style.display = 'none';
-    addRecord('打开了整蛊页面！');
-    startAutoCheck(); // 启动自动检查上传
-  };
-
-  userNameInput.onkeydown = function (e) {
-    if (e.key === 'Enter') confirmNameBtn.click();
-  };
-
-  // ========== 按钮逃跑逻辑（手机完美适配，不会跑出屏幕） ==========
-  function moveBtn() {
-    const btnWidth = btn.offsetWidth;
-    const btnHeight = btn.offsetHeight;
-    const randomX = Math.random() * (window.innerWidth - btnWidth);
-    const randomY = Math.random() * (window.innerHeight - btnHeight);
-    btn.style.left = randomX + 'px';
-    btn.style.top = randomY + 'px';
-    addRecord('试图点击按钮，按钮逃跑啦！');
-  }
-
-  btn.onmouseover = moveBtn; // 电脑端
-  btn.ontouchstart = function (e) {
-    e.preventDefault();
-    moveBtn(); // 手机触摸触发
-  };
-
-  // 双击成功逻辑
-  btn.ondblclick = function () {
-    alert('算你厉害！😜');
-    btn.style.left = '50%';
-    btn.style.top = '50%';
-    addRecord('双击按钮成功，按钮回到原位！');
-  };
-
-  // ========== 添加记录 ==========
-  function addRecord(action) {
-    const now = new Date();
-    const timeStr = now.getFullYear() + "-" +
-      String(now.getMonth() + 1).padStart(2, '0') + "-" +
-      String(now.getDate()).padStart(2, '0') + " " +
-      String(now.getHours()).padStart(2, '0') + ":" +
-      String(now.getMinutes()).padStart(2, '0') + ":" +
-      String(now.getSeconds()).padStart(2, '0');
-
-    const newRecord = {
-      userName: userName,
-      time: timeStr,
-      action: action
-    };
-
-    trickRecords.push(newRecord);
-    localStorage.setItem('trickRecords', JSON.stringify(trickRecords));
-    renderRecords();
-  }
-
-  // ========== 渲染记录 ==========
-  function renderRecords() {
-    const recordList = document.getElementById('recordList');
-    recordList.innerHTML = '';
-
-    if (trickRecords.length === 0) {
-      recordList.innerHTML = '<p style="color:#999;text-align:center;padding:20px 0;">暂无操作记录～</p>';
-      return;
-    }
-
-    trickRecords.forEach((item, index) => {
-      const recordItem = document.createElement('div');
-      recordItem.className = 'record-item';
-      recordItem.innerHTML = `<strong>${index+1}.</strong> [${item.time}] ${item.userName}：${item.action}`;
-      recordList.appendChild(recordItem);
-    });
-  }
-
-  // ================================
-  // 核心：稳定提交逻辑，兼容腾讯文档所有规则
-  // ================================
-  function submitSingleRecord(record) {
-    const formData = new FormData();
-    // 严格对应你收集表的3个字段，顺序不能改
-    formData.append("form_0", record.userName);
-    formData.append("form_1", record.time);
-    formData.append("form_2", record.action);
-    // 用sendBeacon提交，不会被跨域拦截，手机/电脑都能稳定提交
-    return navigator.sendBeacon(COLLECT_URL, formData);
-  }
-
-  async function doUpload(isAuto = false) {
-    if (!userName || trickRecords.length === 0) return;
-
-    // 只上传新的未上传记录，避免重复提交
-    const newRecords = trickRecords.slice(uploadedCount);
-    if (newRecords.length === 0) return;
-
-    if (!isAuto) {
-      autoTip.innerText = '正在上传...';
-      autoTip.style.display = 'block';
-    }
-
-    try {
-      // 逐条提交，避免被拦截
-      let allSuccess = true;
-      for (let record of newRecords) {
-        const success = submitSingleRecord(record);
-        if (!success) allSuccess = false;
-        // 加300ms延迟，保证提交稳定
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-
-      // 更新已上传条数
-      uploadedCount = trickRecords.length;
-      localStorage.setItem('uploadedCount', uploadedCount);
-
-      if (!isAuto) {
-        alert(allSuccess ? '✅ 记录上传成功！去腾讯文档查看吧' : '⚠️ 部分记录上传完成，可重试');
-      }
-    } catch (error) {
-      if (!isAuto) {
-        alert('❌ 上传失败，请检查网络后重试');
-      }
-      console.log('上传错误：', error);
-    } finally {
-      autoTip.innerText = '自动检查中...';
-      setTimeout(() => {
-        autoTip.style.display = 'none';
-      }, 2000);
-    }
-  }
-
-  // 手动一键上传
-  const uploadRecordBtn = document.getElementById('upload-record');
-  uploadRecordBtn.onclick = () => doUpload(false);
-
-  // 自动定时检查：每15秒检查一次，有新记录自动上传
-  function startAutoCheck() {
-    setInterval(() => {
-      if (!userName) return;
-      doUpload(true);
-    }, 15000);
-  }
-
-  // ========== 弹窗控制 ==========
-  const recordModal = document.getElementById('recordModal');
-  const viewRecordBtn = document.getElementById('view-record');
-  const closeModalBtn = document.getElementById('closeModal');
-
-  viewRecordBtn.onclick = function () {
-    renderRecords();
-    recordModal.style.display = 'flex';
-  };
-
-  closeModalBtn.onclick = function () {
-    recordModal.style.display = 'none';
-  };
-
-  window.onclick = function (event) {
-    if (event.target === recordModal) recordModal.style.display = 'none';
-  };
-</script>
-</body>
-</html>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敢点我吗？😝</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 12vh;
+            font-size: clamp(20px, 6vw, 26px);
+            color: #333;
+        }
+        #trick-btn {
+            position: absolute;
+            padding: 14px 28px;
+            font-size: 17px;
+            background: pink;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+            touch-action: none;
+            user-select: none;
+        }
+        .func-btn {
+            position: fixed;
+            padding: 11px 0;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            z-index: 9999;
+            width: 115px;
+            text-align: center;
+            touch-action: manipulation;
