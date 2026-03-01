@@ -69,7 +69,7 @@
             position: fixed;
             bottom: 118px;
             right: 15px;
-            background: #ff9800;
+            background: #ff980;
             color: #fff;
             padding: 6px 10px;
             border-radius: 4px;
@@ -123,7 +123,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.75);
-            z-index: 999999;
+            z-index: 9999999;
             justify-content: center;
             align-items: center;
         }
@@ -189,9 +189,9 @@
     const FIELD_TIME = "$2";
     const FIELD_ACTION = "$3";
 
-    let userName = localStorage.getItem('currentUserName') || '';
-    let trickRecords = JSON.parse(localStorage.getItem('trickRecords')) || [];
-    let uploadedCount = parseInt(localStorage.getItem('uploadedCount') || 0);
+    let userName = '';
+    let trickRecords = [];
+    let uploadedCount = 0;
     
     const autoTip = document.getElementById('autoTip');
     const btn = document.getElementById('trick-btn');
@@ -206,12 +206,9 @@
     let maxLeft = window.innerWidth - btn.offsetWidth - 20;
     let maxTop = window.innerHeight - btn.offsetHeight - 20;
 
+    // 强制每次打开都必须注册
     window.onload = function () {
-        if (!userName) {
-            registerModal.style.display = 'flex';
-        } else {
-            addRecord('打开了整蛊页面！');
-        }
+        registerModal.style.display = 'flex';
         renderRecords();
     };
 
@@ -222,7 +219,6 @@
             return;
         }
         userName = inputName;
-        localStorage.setItem('currentUserName', userName);
         registerModal.style.display = 'none';
         addRecord('打开了整蛊页面！');
     };
@@ -262,84 +258,54 @@
             String(now.getMinutes()).padStart(2,'0') + ":" +
             String(now.getSeconds()).padStart(2,'0');
 
-        const newRecord = {
-            userName: userName,
-            time: timeStr,
-            action: action
-        };
-
+        const newRecord = { userName, time: timeStr, action };
         trickRecords.push(newRecord);
-        localStorage.setItem('trickRecords', JSON.stringify(trickRecords));
         renderRecords();
     }
 
     function renderRecords() {
         const recordList = document.getElementById('recordList');
         recordList.innerHTML = '';
-
-        if (trickRecords.length === 0) {
+        if (!trickRecords.length) {
             recordList.innerHTML = '<p style="color:#999;text-align:center;padding:20px 0;">暂无操作记录～</p>';
             return;
         }
-
-        trickRecords.slice().reverse().forEach((item, index) => {
-            const recordItem = document.createElement('div');
-            recordItem.className = 'record-item';
-            recordItem.innerHTML = `<strong>${trickRecords.length - index}.</strong> [${item.time}] ${item.userName}：${item.action}`;
-            recordList.appendChild(recordItem);
+        trickRecords.slice().reverse().forEach((item,i)=>{
+            const div = document.createElement('div');
+            div.className = 'record-item';
+            div.innerHTML = `<strong>${trickRecords.length-i}.</strong> [${item.time}] ${item.userName}：${item.action}`;
+            recordList.appendChild(div);
         });
     }
 
-    viewRecordBtn.onclick = function () {
-        recordModal.style.display = 'flex';
-    };
-    closeModal.onclick = function () {
-        recordModal.style.display = 'none';
-    };
-    recordModal.onclick = function (e) {
-        if (e.target === recordModal) {
-            recordModal.style.display = 'none';
-        }
+    viewRecordBtn.onclick = () => { recordModal.style.display = 'flex'; };
+    closeModal.onclick = () => { recordModal.style.display = 'none'; };
+    recordModal.onclick = e => {
+        if (e.target === recordModal) recordModal.style.display = 'none';
     };
 
+    // 静默上传，不弹任何窗口！
     uploadRecordBtn.onclick = async function () {
-        const newRecords = trickRecords.slice(uploadedCount);
-        if (newRecords.length === 0) return;
+        if (!userName || trickRecords.length === 0) return;
+        
+        for (let record of trickRecords) {
+            const formData = new FormData();
+            formData.append(FIELD_USER, record.userName);
+            formData.append(FIELD_TIME, record.time);
+            formData.append(FIELD_ACTION, record.action);
 
-        for (let record of newRecords) {
-            await submitSingleRecord(record);
+            try {
+                await fetch(COLLECT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: formData
+                });
+            } catch (e) {}
         }
-
-        uploadedCount = trickRecords.length;
-        localStorage.setItem('uploadedCount', uploadedCount);
+        trickRecords = [];
+        uploadedCount = 0;
+        renderRecords();
     };
-
-    function submitSingleRecord(record) {
-        return new Promise(resolve => {
-            const form = document.createElement("form");
-            form.action = COLLECT_URL;
-            form.method = "POST";
-            form.target = "_blank";
-            form.style.display = "none";
-
-            const u = document.createElement("input");
-            u.type = "hidden"; u.name = FIELD_USER; u.value = record.userName;
-            form.appendChild(u);
-
-            const t = document.createElement("input");
-            t.type = "hidden"; t.name = FIELD_TIME; t.value = record.time;
-            form.appendChild(t);
-
-            const a = document.createElement("input");
-            a.type = "hidden"; a.name = FIELD_ACTION; a.value = record.action;
-            form.appendChild(a);
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-            setTimeout(resolve, 300);
-        });
-    }
 
     window.addEventListener('resize', () => {
         maxLeft = window.innerWidth - btn.offsetWidth - 20;
