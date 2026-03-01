@@ -3,51 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>敢点我吗？😝</title>
+    <title>整蛊游戏</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            font-family: "Microsoft YaHei", sans-serif;
         }
-        html, body {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #f5f5f5;
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        h2 {
-            text-align: center;
-            margin-top: 12vh;
-            font-size: clamp(20px, 6vw, 26px);
+        .title {
+            font-size: 24px;
+            font-weight: bold;
             color: #333;
+            margin-bottom: 30px;
         }
-        #trick-btn {
-            position: absolute;
-            padding: 14px 28px;
-            font-size: 17px;
-            background: pink;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.15s ease;
-            touch-action: none;
-            user-select: none;
-        }
-        .func-btn {
-            position: fixed;
-            padding: 11px 0;
+        .btn {
+            width: 200px;
+            height: 60px;
+            background-color: #ff69b4;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            z-index: 9999;
-            width: 115px;
-            text-align: center;
-            touch-action: manipulation;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #ff1493;
+            transform: scale(1.05);
+        }
+        .record-list {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .record-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+        }
+        .upload-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 50px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .upload-btn:hover {
+            background-color: #337ecc;
+        }
+        .view-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 50px;
+            background-color: #67c23a;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .view-btn:hover {
+            background-color: #529b2e;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">整蛊游戏测试</h1>
+    <button class="btn" id="actionBtn">点击生成操作记录</button>
+    <div class="record-list" id="recordList">
+        <div class="record-item">等待生成记录...</div>
+    </div>
+    <button class="view-btn" id="viewBtn">查看记录</button>
+    <button class="upload-btn" id="uploadBtn">上传记录</button>
+
+    <script>
+        // 已替换为你提供的收集表专属提交地址
+        const COLLECT_URL = "https://docs.qq.com/form/fill/DQmp5ZG1mbUtOR2py";
+        // 可自定义修改这里的用户名
+        const USER_NAME = "测试用户";
+        // 本地记录存储数组
+        let recordList = [];
+
+        // 点击粉色按钮生成操作记录
+        document.getElementById("actionBtn").addEventListener("click", () => {
+            const now = new Date();
+            const timeStr = now.toLocaleString();
+            const action = "点击了粉色按钮，生成了一条操作记录";
+            // 新增记录到列表顶部
+            recordList.unshift({
+                time: timeStr,
+                action: action
+            });
+            // 刷新页面记录展示
+            renderRecordList();
+        });
+
+        // 渲染记录列表到页面
+        function renderRecordList() {
+            const listDom = document.getElementById("recordList");
+            if (recordList.length === 0) {
+                listDom.innerHTML = '<div class="record-item">暂无记录</div>';
+                return;
+            }
+            let html = "";
+            recordList.forEach((item) => {
+                html += `<div class="record-item">【${item.time}】${item.action}</div>`;
+            });
+            listDom.innerHTML = html;
+        }
+
+        // 查看本地记录按钮
+        document.getElementById("viewBtn").addEventListener("click", () => {
+            if (recordList.length === 0) {
+                alert("暂无记录可查看");
+                return;
+            }
+            let allRecord = "所有操作记录：\n\n";
+            recordList.forEach((item, index) => {
+                allRecord += `${index + 1}. ${item.time} - ${item.action}\n`;
+            });
+            alert(allRecord);
+        });
+
+        // 上传记录核心按钮
+        document.getElementById("uploadBtn").addEventListener("click", async () => {
+            if (recordList.length === 0) {
+                alert("暂无记录可上传");
+                return;
+            }
+            // 循环提交每一条记录
+            for (let i = 0; i < recordList.length; i++) {
+                const record = recordList[i];
+                await submitSingleRecord(record);
+            }
+            alert("所有记录已提交完成！请去腾讯文档「已填写」列表刷新查看");
+        });
+
+        // 单条记录提交函数（表单提交方式，彻底绕过跨域限制）
+        function submitSingleRecord(record) {
+            return new Promise((resolve) => {
+                // 创建隐藏的提交表单
+                const form = document.createElement("form");
+                form.action = COLLECT_URL;
+                form.method = "POST";
+                form.target = "_blank"; // 新窗口提交，不跳转当前页面
+                form.style.display = "none";
+
+                // 完全匹配你腾讯文档的3个表单项，顺序一一对应
+                // 1. 用户名（表单第1个必填项）
+                const userInput = document.createElement("input");
+                userInput.type = "hidden";
+                userInput.name = "$1";
+                userInput.value = USER_NAME;
+                form.appendChild(userInput);
+
+                // 2. 操作时间（表单第2个必填项）
+                const timeInput = document.createElement("input");
+                timeInput.type = "hidden";
+                timeInput.name = "$2";
+                timeInput.value = record.time;
+                form.appendChild(timeInput);
+
+                // 3. 操作行为（表单第3个必填项）
+                const actionInput = document.createElement("input");
+                actionInput.type = "hidden";
+                actionInput.name = "$3";
+                actionInput.value = record.action;
+                form.appendChild(actionInput);
+
+                // 提交表单后自动移除
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+
+                // 延迟100ms，避免提交过快被拦截
+                setTimeout(() => {
+                    resolve();
+                }, 100);
+            });
+        }
+    </script>
+</body>
+</html>
