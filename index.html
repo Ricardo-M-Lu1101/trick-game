@@ -5,75 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>敢点我吗？😝</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #f5f5f5;
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: system-ui;
             text-align: center;
             overflow: hidden;
             height: 100vh;
         }
-        h2 {
-            margin-top: 12vh;
-            font-size: 22px;
-            color: #333;
-        }
+        h2 { margin-top: 12vh; font-size: 22px; }
         #trick-btn {
             position: absolute;
             padding: 14px 28px;
             background: pink;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            left: 50%;
-            top: 50%;
+            border: none; border-radius: 8px;
+            left: 50%; top: 50%;
             transform: translate(-50%, -50%);
-            transition: left 0.15s, top 0.15s;
+            transition: 0.15s;
             touch-action: none;
-            z-index: 99;
-            cursor: pointer;
-            white-space: nowrap;
+            z-index: 10;
         }
-        .btn {
+        #viewBtn, #uploadBtn {
             position: fixed;
             bottom: 20px;
             padding: 10px;
             color: white;
-            background: #2196F3;
-            border: none;
-            border-radius: 6px;
+            border: none; border-radius: 6px;
             width: 120px;
             z-index: 100;
-            font-size: 14px;
         }
-        #view {
-            right: 150px;
-            background: #4CAF50;
-        }
-        #upload {
-            right: 20px;
-        }
+        #viewBtn { right: 150px; background: #4CAF50; }
+        #uploadBtn { right: 20px; background: #2196F3; }
         #result {
             position: fixed;
-            bottom: 100px;
-            left: 50%;
+            bottom: 100px; left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-height: 300px;
+            width: 90%; max-height: 300px;
             overflow-y: auto;
-            background: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.15);
-            text-align: left;
-            font-size: 12px;
-            display: none;
-            white-space: pre-wrap;
-            line-height: 1.4;
+            background: white;
+            padding: 10px; border-radius: 8px;
+            text-align: left; font-size: 12px;
+            white-space: pre-wrap; line-height: 1.4;
         }
     </style>
 </head>
@@ -81,72 +53,77 @@
 
 <h2>有本事你点到我！😜</h2>
 <button id="trick-btn">点我呀！</button>
-<button id="view" class="btn">查看记录</button>
-<button id="upload" class="btn">一键上传</button>
-<pre id="result"></pre>
+<button id="viewBtn">查看记录</button>
+<button id="uploadBtn">一键上传</button>
+<div id="result"></div>
 
 <script>
-    let name = "";
+    let userName = "";
     let records = [];
     const btn = document.getElementById("trick-btn");
     const result = document.getElementById("result");
+    const viewBtn = document.getElementById("viewBtn");
+    const uploadBtn = document.getElementById("uploadBtn");
 
-    // 修复：取消不会死循环
-    while (!name || !name.trim()) {
-        name = prompt("请输入你的名字：");
-        if (name === null) {
-            name = "匿名用户";
+    // ======================================
+    // 强制必须输入名字，不输入不能玩
+    // ======================================
+    while (true) {
+        userName = prompt("🎮 请输入你的名字才能开始游戏：");
+        if (userName === null) window.close();
+        if (userName && userName.trim() !== "") {
+            userName = userName.trim();
             break;
         }
     }
 
-    // 安全获取范围
-    function getMaxRange() {
-        return {
-            maxX: window.innerWidth - btn.offsetWidth - 20,
-            maxY: window.innerHeight - btn.offsetHeight - 20
-        };
-    }
-
     // 按钮逃跑
-    function move() {
-        const { maxX, maxY } = getMaxRange();
+    function moveBtn() {
+        const maxX = window.innerWidth - btn.offsetWidth - 20;
+        const maxY = window.innerHeight - btn.offsetHeight - 20;
         btn.style.left = Math.random() * maxX + "px";
         btn.style.top = Math.random() * maxY + "px";
         addRecord("尝试点击按钮");
     }
 
-    btn.onmouseover = move;
-    btn.ontouchstart = (e) => {
-        e.preventDefault();
-        move();
-    };
-
-    btn.ondblclick = () => {
-        addRecord("成功点到按钮！");
-    };
+    btn.onmouseover = moveBtn;
+    btn.ontouchstart = (e) => { e.preventDefault(); moveBtn(); };
+    btn.ondblclick = () => { addRecord("成功点到！"); };
 
     // 添加记录
     function addRecord(text) {
         const time = new Date().toLocaleString();
-        records.push(`[${time}] ${name}：${text}`);
+        records.push(`[${time}] ${userName}：${text}`);
     }
 
     // 查看记录
-    document.getElementById("view").onclick = () => {
-        result.textContent = records.join("\n") || "暂无操作记录";
-        result.style.display = "block";
+    viewBtn.onclick = () => {
+        result.textContent = records.join("\n") || "暂无记录";
     };
 
-    // 一键上传（本地输出，不弹窗、不跳转）
-    document.getElementById("upload").onclick = () => {
+    // ======================================
+    // 一键上传 → 跳腾讯表单，自动填好所有内容
+    // ======================================
+    uploadBtn.onclick = () => {
         if (records.length === 0) {
-            result.textContent = "暂无记录可上传";
-            result.style.display = "block";
+            alert("暂无记录可上传");
             return;
         }
-        result.textContent = "✅ 自动上传完成（本地记录）：\n\n" + records.join("\n");
-        result.style.display = "block";
+
+        // 👇 这是你的腾讯表单地址 + 自动拼接数据
+        const baseUrl = "https://docs.qq.com/form/fill/DQmp5ZG1mbUtOR2py";
+        const content = records.join("\n");
+        
+        // 自动填充字段（对应你表单里的：用户、时间、记录）
+        const params = new URLSearchParams();
+        params.append("$1", userName);       // 用户名
+        params.append("$2", new Date().toLocaleString()); // 时间
+        params.append("$3", content);        // 完整记录
+
+        const finalUrl = baseUrl + "?" + params.toString();
+        
+        // 打开新页面，内容已自动填好
+        window.open(finalUrl, "_blank");
     };
 </script>
 </body>
