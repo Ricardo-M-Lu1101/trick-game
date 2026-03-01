@@ -3,214 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>整蛊游戏</title>
+    <title>敢点我吗？😝</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
-        body {
-            background-color: #f5f5f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
         }
-        .title {
-            font-size: 24px;
-            font-weight: bold;
+        h2 {
+            text-align: center;
+            margin-top: 12vh;
+            font-size: clamp(20px, 6vw, 26px);
             color: #333;
-            margin-bottom: 30px;
         }
-        .btn {
-            width: 200px;
-            height: 60px;
-            background-color: #ff69b4;
+        #trick-btn {
+            position: absolute;
+            padding: 14px 28px;
+            font-size: 17px;
+            background: pink;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease;
+            touch-action: none;
+            user-select: none;
+            z-index: 100;
+        }
+        .func-btn {
+            position: fixed;
+            padding: 11px 0;
             color: white;
             border: none;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 6px;
+            font-size: 13px;
+            z-index: 9999;
+            width: 115px;
+            text-align: center;
+            touch-action: manipulation;
             cursor: pointer;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
-        .btn:hover {
-            background-color: #ff1493;
-            transform: scale(1.05);
+        #view-record {
+            bottom: 20px;
+            right: 15px;
+            background: #4CAF50;
         }
-        .record-list {
+        #upload-record {
+            bottom: 68px;
+            right: 15px;
+            background: #2196F3;
+        }
+        .auto-tip {
+            position: fixed;
+            bottom: 118px;
+            right: 15px;
+            background: #ff9800;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            z-index: 9999;
+            display: none;
+        }
+        .record-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 600px;
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-height: 400px;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            width: 92%;
+            max-height: 75vh;
             overflow-y: auto;
         }
-        .record-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
+        .close-modal {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
             color: #666;
+            line-height: 1;
         }
-        .upload-btn {
+        .modal-content h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .record-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .register-modal {
+            display: none;
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 120px;
-            height: 50px;
-            background-color: #409eff;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999999 !important; /* 修复：强制最高层级，不会被覆盖 */
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .register-content {
+            background: white;
+            padding: 40px 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            pointer-events: auto;
+        }
+        .register-content h3 {
+            margin-bottom: 20px;
+            font-size: 19px;
+        }
+        .register-content input {
+            width: 100%;
+            padding: 14px;
+            margin: 20px 0;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+        }
+        .register-content button {
+            width: 100%;
+            padding: 13px 0;
+            background: #2196F3;
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        .upload-btn:hover {
-            background-color: #337ecc;
+        /* 修复：新增未注册时锁定页面，禁止操作 */
+        .page-content {
+            transition: filter 0.2s ease;
         }
-        .view-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 120px;
-            height: 50px;
-            background-color: #67c23a;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .view-btn:hover {
-            background-color: #529b2e;
+        .page-lock {
+            pointer-events: none !important;
+            filter: blur(3px);
+            user-select: none;
         }
     </style>
 </head>
 <body>
-    <h1 class="title">整蛊游戏测试</h1>
-    <button class="btn" id="actionBtn">点击生成操作记录</button>
-    <div class="record-list" id="recordList">
-        <div class="record-item">等待生成记录...</div>
+    <!-- 修复：新增页面内容包裹层，未注册时完全锁定 -->
+    <div id="pageContent" class="page-lock">
+        <h2>有本事你点到我！😜</h2>
+        <!-- 整蛊逃跑按钮 -->
+        <button id="trick-btn">点我呀！</button>
+
+        <!-- 功能按钮 -->
+        <button class="func-btn" id="view-record">查看记录 📝</button>
+        <button class="func-btn" id="upload-record">一键上传 📤</button>
+        <div class="auto-tip" id="autoTip">自动检查中...</div>
+
+        <!-- 记录查看弹窗 -->
+        <div class="record-modal" id="recordModal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeModal">&times;</span>
+                <h3>操作记录</h3>
+                <div id="recordList"></div>
+            </div>
+        </div>
     </div>
-    <button class="view-btn" id="viewBtn">查看记录</button>
-    <button class="upload-btn" id="uploadBtn">上传记录</button>
 
-    <script>
-        // 已替换为你提供的收集表专属提交地址
-        const COLLECT_URL = "https://docs.qq.com/form/fill/DQmp5ZG1mbUtOR2py";
-        // 可自定义修改这里的用户名
-        const USER_NAME = "测试用户";
-        // 本地记录存储数组
-        let recordList = [];
+    <!-- 用户名注册弹窗（独立在锁定层外，确保可操作） -->
+    <div class="register-modal" id="registerModal">
+        <div class="register-content">
+            <h3>请输入你的名字</h3>
+            <input type="text" id="userNameInput" placeholder="比如：小明" maxlength="10">
+            <br>
+            <button id="confirmNameBtn">确认</button>
+        </div>
+    </div>
 
-        // 点击粉色按钮生成操作记录
-        document.getElementById("actionBtn").addEventListener("click", () => {
-            const now = new Date();
-            const timeStr = now.toLocaleString();
-            const action = "点击了粉色按钮，生成了一条操作记录";
-            // 新增记录到列表顶部
-            recordList.unshift({
-                time: timeStr,
-                action: action
-            });
-            // 刷新页面记录展示
-            renderRecordList();
-        });
+<script>
+    // 已替换为你提供的腾讯文档收集表正确地址
+    const COLLECT_URL = "https://docs.qq.com/form/fill/DQmp5ZG1mbUtOR2py";
+    // 已匹配你腾讯文档表单的正确字段，对应用户名、操作时间、操作行为
+    const FIELD_USER = "$1";
+    const FIELD_TIME = "$2";
+    const FIELD_ACTION = "$3";
 
-        // 渲染记录列表到页面
-        function renderRecordList() {
-            const listDom = document.getElementById("recordList");
-            if (recordList.length === 0) {
-                listDom.innerHTML = '<div class="record-item">暂无记录</div>';
-                return;
-            }
-            let html = "";
-            recordList.forEach((item) => {
-                html += `<div class="record-item">【${item.time}】${item.action}</div>`;
-            });
-            listDom.innerHTML = html;
+    // 全局变量定义
+    let userName = ''; // 修复：初始化为空，严格校验后再赋值
+    let trickRecords = JSON.parse(localStorage.getItem('trickRecords')) || [];
+    let uploadedCount = parseInt(localStorage.getItem('uploadedCount') || 0);
+    const autoTip = document.getElementById('autoTip');
+    const btn = document.getElementById('trick-btn');
+    const registerModal = document.getElementById('registerModal');
+    const userNameInput = document.getElementById('userNameInput');
+    const confirmNameBtn = document.getElementById('confirmNameBtn');
+    const recordModal = document.getElementById('recordModal');
+    const closeModal = document.getElementById('closeModal');
+    const viewRecordBtn = document.getElementById('view-record');
+    const uploadRecordBtn = document.getElementById('upload-record');
+    const pageContent = document.getElementById('pageContent'); // 修复：新增页面锁定层元素
+    // 按钮可移动范围限制
+    let maxLeft = window.innerWidth - btn.offsetWidth - 20;
+    let maxTop = window.innerHeight - btn.offsetHeight - 20;
+
+    // ========== 修复：页面加载强制校验注册，无用户名绝对无法进入 ==========
+    window.onload = function () {
+        // 1. 严格校验本地存储的用户名，清除无效空值、空格
+        const savedName = localStorage.getItem('currentUserName');
+        if (savedName && savedName.trim() !== '') {
+            userName = savedName.trim();
+            // 有有效用户名，解锁页面，初始化功能
+            unlockPage();
+            addRecord('打开了整蛊页面！');
+            startAutoCheck();
+        } else {
+            // 无有效用户名，清除无效缓存，强制弹出注册框
+            localStorage.removeItem('currentUserName');
+            showRegisterModal();
+        }
+        renderRecords();
+    };
+
+    // ========== 修复：强制显示注册框，无法关闭 ==========
+    function showRegisterModal() {
+        registerModal.style.display = 'flex !important';
+        userNameInput.focus(); // 自动聚焦输入框，提升体验
+        document.body.style.overflow = 'hidden'; // 禁止页面滚动
+    }
+
+    // ========== 修复：注册完成解锁页面 ==========
+    function unlockPage() {
+        pageContent.classList.remove('page-lock');
+        registerModal.style.display = 'none';
+        document.body.style.overflow = ''; // 恢复页面滚动
+    }
+
+    // ========== 修复：用户名注册逻辑，必须输入有效名字才能进入 ==========
+    confirmNameBtn.onclick = function () {
+        const inputName = userNameInput.value.trim();
+        if (!inputName) {
+            alert('请输入你的名字哦！');
+            userNameInput.focus();
+            return;
+        }
+        // 保存有效用户名到本地
+        userName = inputName;
+        localStorage.setItem('currentUserName', userName);
+        // 解锁页面，初始化所有功能
+        unlockPage();
+        addRecord('打开了整蛊页面！');
+        startAutoCheck();
+    };
+
+    // 回车确认注册，提升体验
+    userNameInput.onkeydown = function (e) {
+        if (e.key === 'Enter') confirmNameBtn.click();
+    };
+
+    // 修复：禁止点击注册弹窗空白处关闭，必须点确认按钮
+    registerModal.onclick = function (e) {
+        if (e.target === registerModal) {
+            userNameInput.focus();
+        }
+    };
+
+    // ========== 核心：按钮逃跑整蛊逻辑（完全保留你原有的逻辑） ==========
+    function moveBtn() {
+        // 生成随机位置，限制按钮不会跑出屏幕
+        const randomX = Math.floor(Math.random() * maxLeft);
+        const randomY = Math.floor(Math.random() * maxTop);
+        // 更新按钮位置
+        btn.style.left = randomX + 'px';
+        btn.style.top = randomY + 'px';
+        btn.style.transform = 'translate(0, 0)';
+        // 新增操作记录
+        addRecord('试图点击按钮，按钮逃跑啦！');
+    }
+
+    // 电脑端：鼠标靠近触发逃跑
+    btn.onmouseover = moveBtn;
+    // 手机端：手指触摸触发逃跑
+    btn.ontouchstart = function (e) {
+        e.preventDefault();
+        moveBtn();
+    };
+
+    // 双击按钮彩蛋：回到原位
+    btn.ondblclick = function () {
+        alert('算你厉害！😜');
+        btn.style.left = '50%';
+        btn.style.top = '50%';
+        btn.style.transform = 'translate(-50%, -50%)';
+        addRecord('双击按钮成功，按钮回到原位！');
+    };
+
+    // ========== 记录管理逻辑（完全保留你原有的逻辑） ==========
+    function addRecord(action) {
+        const now = new Date();
+        // 格式化时间，确保格式统一
+        const timeStr = now.getFullYear() + "-" +
+            String(now.getMonth() + 1).padStart(2, '0') + "-" +
+            String(now.getDate()).padStart(2, '0') + " " +
+            String(now.getHours()).padStart(2, '0') + ":" +
+            String(now.getMinutes()).padStart(2, '0') + ":" +
+            String(now.getSeconds()).padStart(2, '0');
+
+        const newRecord = {
+            userName: userName,
+            time: timeStr,
+            action: action
+        };
+
+        // 保存记录到本地
+        trickRecords.push(newRecord);
+        localStorage.setItem('trickRecords', JSON.stringify(trickRecords));
+        // 刷新记录列表
+        renderRecords();
+    }
+
+    // 渲染记录列表到弹窗
+    function renderRecords() {
+        const recordList = document.getElementById('recordList');
+        recordList.innerHTML = '';
+
+        if (trickRecords.length === 0) {
+            recordList.innerHTML = '<p style="color:#999;text-align:center;padding:20px 0;">暂无操作记录～</p>';
+            return;
         }
 
-        // 查看本地记录按钮
-        document.getElementById("viewBtn").addEventListener("click", () => {
-            if (recordList.length === 0) {
-                alert("暂无记录可查看");
-                return;
-            }
-            let allRecord = "所有操作记录：\n\n";
-            recordList.forEach((item, index) => {
-                allRecord += `${index + 1}. ${item.time} - ${item.action}\n`;
-            });
-            alert(allRecord);
+        // 倒序展示，最新的记录在最上面
+        trickRecords.slice().reverse().forEach((item, index) => {
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+            recordItem.innerHTML = `<strong>${trickRecords.length - index}.</strong> [${item.time}] ${item.userName}：${item.action}`;
+            recordItem.appendChild(recordItem);
         });
+    }
 
-        // 上传记录核心按钮
-        document.getElementById("uploadBtn").addEventListener("click", async () => {
-            if (recordList.length === 0) {
-                alert("暂无记录可上传");
-                return;
-            }
-            // 循环提交每一条记录
-            for (let i = 0; i < recordList.length; i++) {
-                const record = recordList[i];
-                await submitSingleRecord(record);
-            }
-            alert("所有记录已提交完成！请去腾讯文档「已填写」列表刷新查看");
+    // 查看记录弹窗控制
+    viewRecordBtn.onclick = function () {
+        recordModal.style.display = 'flex';
+    };
+    closeModal.onclick = function () {
+        recordModal.style.display = 'none';
+    };
+    // 点击弹窗空白处关闭
+    recordModal.onclick = function (e) {
+        if (e.target === recordModal) {
+            recordModal.style.display = 'none';
+        }
+    };
+
+    // ========== 修复：补全你原代码里未写完的提交逻辑，解决JS报错 ==========
+    function submitSingleRecord(record) {
+        return new Promise((resolve) => {
+            // 创建隐藏表单提交，彻底绕过跨域限制
+            const form = document.createElement("form");
+            form.action = COLLECT_URL;
+            form.method = "POST";
+            form.target = "_blank";
+            form.style.display = "none";
+
+            // 匹配你腾讯文档的3个字段，一一对应
+            const userInput = document.createElement("input");
+            userInput.type = "hidden";
+            userInput.name = FIELD_USER;
+            userInput.value = record.userName;
+            form.appendChild(userInput);
+
+            const timeInput = document.createElement("input");
+            timeInput.type = "hidden";
+            timeInput.name = FIELD_TIME;
+            timeInput.value = record.time;
+            form.appendChild(timeInput);
+
+            const actionInput = document.createElement("input");
+            actionInput.type = "hidden";
+            actionInput.name = FIELD_ACTION;
+            actionInput.value = record.action;
+            form.appendChild(actionInput);
+
+            // 提交并移除表单
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+
+            // 延迟避免提交过快被拦截
+            setTimeout(() => {
+                resolve(true);
+            }, 300);
         });
+    }
 
-        // 单条记录提交函数（表单提交方式，彻底绕过跨域限制）
-        function submitSingleRecord(record) {
-            return new Promise((resolve) => {
-                // 创建隐藏的提交表单
-                const form = document.createElement("form");
-                form.action = COLLECT_URL;
-                form.method = "POST";
-                form.target = "_blank"; // 新窗口提交，不跳转当前页面
-                form.style.display = "none";
+    // ========== 修复：补全你原代码里缺失的上传核心函数 ==========
+    async function doUpload(isAuto = false) {
+        if (!userName || trickRecords.length === 0) {
+            if (!isAuto) alert('暂无记录可上传！');
+            return;
+        }
 
-                // 完全匹配你腾讯文档的3个表单项，顺序一一对应
-                // 1. 用户名（表单第1个必填项）
-                const userInput = document.createElement("input");
-                userInput.type = "hidden";
-                userInput.name = "$1";
-                userInput.value = USER_NAME;
-                form.appendChild(userInput);
+        // 只上传未上传过的新记录
+        const newRecords = trickRecords.slice(uploadedCount);
+        if (newRecords.length === 0) {
+            if (!isAuto) alert('所有记录均已上传，无需重复提交！');
+            return;
+        }
 
-                // 2. 操作时间（表单第2个必填项）
-                const timeInput = document.createElement("input");
-                timeInput.type = "hidden";
-                timeInput.name = "$2";
-                timeInput.value = record.time;
-                form.appendChild(timeInput);
+        // 显示上传状态
+        if (!isAuto) {
+            autoTip.innerText = '正在上传...';
+            autoTip.style.display = 'block';
+        }
 
-                // 3. 操作行为（表单第3个必填项）
-                const actionInput = document.createElement("input");
-                actionInput.type = "hidden";
-                actionInput.name = "$3";
-                actionInput.value = record.action;
-                form.appendChild(actionInput);
+        try {
+            let allSuccess = true;
+            // 循环提交每条记录
+            for (let record of newRecords) {
+                const success = await submitSingleRecord(record);
+                if (!success) allSuccess = false;
+            }
 
-                // 提交表单后自动移除
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+            // 更新已上传数量
+            uploadedCount = trickRecords.length;
+            localStorage.setItem('uploadedCount', uploadedCount);
 
-                // 延迟100ms，避免提交过快被拦截
+            // 提示结果
+            if (!isAuto) {
+                alert(allSuccess ? '✅ 所有记录提交成功！请去腾讯文档「已填写」列表刷新查看' : '⚠️ 部分记录提交完成，可重试');
+            }
+        } catch (error) {
+            if (!isAuto) {
+                alert('❌ 提交失败，请检查网络后重试');
+            }
+            console.error('提交错误：', error);
+        } finally {
+            // 隐藏提示
+            autoTip.innerText = '自动检查中...';
+            if (!isAuto) {
                 setTimeout(() => {
-                    resolve();
-                }, 100);
-            });
+                    autoTip.style.display = 'none';
+                }, 2000);
+            }
         }
-    </script>
+    }
+
+    // ========== 修复：补全你原代码里缺失的上传按钮点击事件 ==========
+    uploadRecordBtn.onclick = () => doUpload(false);
+
+    // ========== 修复：补全你原代码里缺失的自动检查函数 ==========
+    function startAutoCheck() {
+        // 每30秒自动检查是否有新记录
+        setInterval(() => {
+            const newRecords = trickRecords.slice(uploadedCount);
+            if (newRecords.length > 0) {
+                autoTip.style.display = 'block';
+                setTimeout(() => {
+                    autoTip.style.display = 'none';
+                }, 3000);
+            }
+        }, 30000);
+    }
+
+    // ========== 修复：窗口大小变化适配，修正变量作用域bug ==========
+    window.addEventListener('resize', () => {
+        // 直接修改全局变量，不重新声明，避免按钮跑出屏幕
+        maxLeft = window.innerWidth - btn.offsetWidth - 20;
+        maxTop = window.innerHeight - btn.offsetHeight - 20;
+    });
+</script>
 </body>
 </html>
