@@ -123,19 +123,16 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.75);
-            z-index: 9999999 !important; /* 修复：强制最高层级，不会被覆盖 */
+            z-index: 999999;
             justify-content: center;
             align-items: center;
-            pointer-events: auto;
         }
         .register-content {
             background: white;
             padding: 40px 25px;
             border-radius: 12px;
             width: 90%;
-            max-width: 400px;
             text-align: center;
-            pointer-events: auto;
         }
         .register-content h3 {
             margin-bottom: 20px;
@@ -148,7 +145,6 @@
             font-size: 16px;
             border: 1px solid #ddd;
             border-radius: 6px;
-            outline: none;
         }
         .register-content button {
             width: 100%;
@@ -160,40 +156,24 @@
             font-size: 16px;
             cursor: pointer;
         }
-        /* 修复：新增未注册时锁定页面，禁止操作 */
-        .page-content {
-            transition: filter 0.2s ease;
-        }
-        .page-lock {
-            pointer-events: none !important;
-            filter: blur(3px);
-            user-select: none;
-        }
     </style>
 </head>
 <body>
-    <!-- 修复：新增页面内容包裹层，未注册时完全锁定 -->
-    <div id="pageContent" class="page-lock">
-        <h2>有本事你点到我！😜</h2>
-        <!-- 整蛊逃跑按钮 -->
-        <button id="trick-btn">点我呀！</button>
+    <h2>有本事你点到我！😜</h2>
+    <button id="trick-btn">点我呀！</button>
 
-        <!-- 功能按钮 -->
-        <button class="func-btn" id="view-record">查看记录 📝</button>
-        <button class="func-btn" id="upload-record">一键上传 📤</button>
-        <div class="auto-tip" id="autoTip">自动检查中...</div>
+    <button class="func-btn" id="view-record">查看记录 📝</button>
+    <button class="func-btn" id="upload-record">一键上传 📤</button>
+    <div class="auto-tip" id="autoTip">自动检查中...</div>
 
-        <!-- 记录查看弹窗 -->
-        <div class="record-modal" id="recordModal">
-            <div class="modal-content">
-                <span class="close-modal" id="closeModal">&times;</span>
-                <h3>操作记录</h3>
-                <div id="recordList"></div>
-            </div>
+    <div class="record-modal" id="recordModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <h3>操作记录</h3>
+            <div id="recordList"></div>
         </div>
     </div>
 
-    <!-- 用户名注册弹窗（独立在锁定层外，确保可操作） -->
     <div class="register-modal" id="registerModal">
         <div class="register-content">
             <h3>请输入你的名字</h3>
@@ -204,17 +184,15 @@
     </div>
 
 <script>
-    // 已替换为你提供的腾讯文档收集表正确地址
     const COLLECT_URL = "https://docs.qq.com/form/fill/DQmp5ZG1mbUtOR2py";
-    // 已匹配你腾讯文档表单的正确字段，对应用户名、操作时间、操作行为
     const FIELD_USER = "$1";
     const FIELD_TIME = "$2";
     const FIELD_ACTION = "$3";
 
-    // 全局变量定义
-    let userName = ''; // 修复：初始化为空，严格校验后再赋值
+    let userName = localStorage.getItem('currentUserName') || '';
     let trickRecords = JSON.parse(localStorage.getItem('trickRecords')) || [];
     let uploadedCount = parseInt(localStorage.getItem('uploadedCount') || 0);
+    
     const autoTip = document.getElementById('autoTip');
     const btn = document.getElementById('trick-btn');
     const registerModal = document.getElementById('registerModal');
@@ -224,112 +202,65 @@
     const closeModal = document.getElementById('closeModal');
     const viewRecordBtn = document.getElementById('view-record');
     const uploadRecordBtn = document.getElementById('upload-record');
-    const pageContent = document.getElementById('pageContent'); // 修复：新增页面锁定层元素
-    // 按钮可移动范围限制
+    
     let maxLeft = window.innerWidth - btn.offsetWidth - 20;
     let maxTop = window.innerHeight - btn.offsetHeight - 20;
 
-    // ========== 修复：页面加载强制校验注册，无用户名绝对无法进入 ==========
     window.onload = function () {
-        // 1. 严格校验本地存储的用户名，清除无效空值、空格
-        const savedName = localStorage.getItem('currentUserName');
-        if (savedName && savedName.trim() !== '') {
-            userName = savedName.trim();
-            // 有有效用户名，解锁页面，初始化功能
-            unlockPage();
-            addRecord('打开了整蛊页面！');
-            startAutoCheck();
+        if (!userName) {
+            registerModal.style.display = 'flex';
         } else {
-            // 无有效用户名，清除无效缓存，强制弹出注册框
-            localStorage.removeItem('currentUserName');
-            showRegisterModal();
+            addRecord('打开了整蛊页面！');
         }
         renderRecords();
     };
 
-    // ========== 修复：强制显示注册框，无法关闭 ==========
-    function showRegisterModal() {
-        registerModal.style.display = 'flex !important';
-        userNameInput.focus(); // 自动聚焦输入框，提升体验
-        document.body.style.overflow = 'hidden'; // 禁止页面滚动
-    }
-
-    // ========== 修复：注册完成解锁页面 ==========
-    function unlockPage() {
-        pageContent.classList.remove('page-lock');
-        registerModal.style.display = 'none';
-        document.body.style.overflow = ''; // 恢复页面滚动
-    }
-
-    // ========== 修复：用户名注册逻辑，必须输入有效名字才能进入 ==========
     confirmNameBtn.onclick = function () {
         const inputName = userNameInput.value.trim();
         if (!inputName) {
             alert('请输入你的名字哦！');
-            userNameInput.focus();
             return;
         }
-        // 保存有效用户名到本地
         userName = inputName;
         localStorage.setItem('currentUserName', userName);
-        // 解锁页面，初始化所有功能
-        unlockPage();
+        registerModal.style.display = 'none';
         addRecord('打开了整蛊页面！');
-        startAutoCheck();
     };
 
-    // 回车确认注册，提升体验
     userNameInput.onkeydown = function (e) {
-        if (e.key === 'Enter') confirmNameBtn.click();
+        if (e.key === 'Enter') confirmNameBtn.onclick();
     };
 
-    // 修复：禁止点击注册弹窗空白处关闭，必须点确认按钮
-    registerModal.onclick = function (e) {
-        if (e.target === registerModal) {
-            userNameInput.focus();
-        }
-    };
-
-    // ========== 核心：按钮逃跑整蛊逻辑（完全保留你原有的逻辑） ==========
     function moveBtn() {
-        // 生成随机位置，限制按钮不会跑出屏幕
         const randomX = Math.floor(Math.random() * maxLeft);
         const randomY = Math.floor(Math.random() * maxTop);
-        // 更新按钮位置
         btn.style.left = randomX + 'px';
         btn.style.top = randomY + 'px';
         btn.style.transform = 'translate(0, 0)';
-        // 新增操作记录
         addRecord('试图点击按钮，按钮逃跑啦！');
     }
 
-    // 电脑端：鼠标靠近触发逃跑
     btn.onmouseover = moveBtn;
-    // 手机端：手指触摸触发逃跑
     btn.ontouchstart = function (e) {
         e.preventDefault();
         moveBtn();
     };
 
-    // 双击按钮彩蛋：回到原位
     btn.ondblclick = function () {
-        alert('算你厉害！😜');
         btn.style.left = '50%';
         btn.style.top = '50%';
         btn.style.transform = 'translate(-50%, -50%)';
         addRecord('双击按钮成功，按钮回到原位！');
     };
 
-    // ========== 记录管理逻辑（完全保留你原有的逻辑） ==========
     function addRecord(action) {
         const now = new Date();
-        // 格式化时间，确保格式统一
         const timeStr = now.getFullYear() + "-" +
-            String(now.getMonth() + 1).padStart(2, '0') + "-" +
-            String(now.getDate()).padStart(2, '0') + " " +
-            String(now.getHours()).padStart(2, '0') + ":" +
-            String(now.getMinutes()).padStart(2, '0') + ":" +
-            String(now.getSeconds()).padStart(2, '0');
+            String(now.getMonth()+1).padStart(2,'0') + "-" +
+            String(now.getDate()).padStart(2,'0') + " " +
+            String(now.getHours()).padStart(2,'0') + ":" +
+            String(now.getMinutes()).padStart(2,'0') + ":" +
+            String(now.getSeconds()).padStart(2,'0');
 
         const newRecord = {
             userName: userName,
@@ -337,14 +268,11 @@
             action: action
         };
 
-        // 保存记录到本地
         trickRecords.push(newRecord);
         localStorage.setItem('trickRecords', JSON.stringify(trickRecords));
-        // 刷新记录列表
         renderRecords();
     }
 
-    // 渲染记录列表到弹窗
     function renderRecords() {
         const recordList = document.getElementById('recordList');
         recordList.innerHTML = '';
@@ -354,142 +282,66 @@
             return;
         }
 
-        // 倒序展示，最新的记录在最上面
         trickRecords.slice().reverse().forEach((item, index) => {
             const recordItem = document.createElement('div');
             recordItem.className = 'record-item';
             recordItem.innerHTML = `<strong>${trickRecords.length - index}.</strong> [${item.time}] ${item.userName}：${item.action}`;
-            recordItem.appendChild(recordItem);
+            recordList.appendChild(recordItem);
         });
     }
 
-    // 查看记录弹窗控制
     viewRecordBtn.onclick = function () {
         recordModal.style.display = 'flex';
     };
     closeModal.onclick = function () {
         recordModal.style.display = 'none';
     };
-    // 点击弹窗空白处关闭
     recordModal.onclick = function (e) {
         if (e.target === recordModal) {
             recordModal.style.display = 'none';
         }
     };
 
-    // ========== 修复：补全你原代码里未写完的提交逻辑，解决JS报错 ==========
+    uploadRecordBtn.onclick = async function () {
+        const newRecords = trickRecords.slice(uploadedCount);
+        if (newRecords.length === 0) return;
+
+        for (let record of newRecords) {
+            await submitSingleRecord(record);
+        }
+
+        uploadedCount = trickRecords.length;
+        localStorage.setItem('uploadedCount', uploadedCount);
+    };
+
     function submitSingleRecord(record) {
-        return new Promise((resolve) => {
-            // 创建隐藏表单提交，彻底绕过跨域限制
+        return new Promise(resolve => {
             const form = document.createElement("form");
             form.action = COLLECT_URL;
             form.method = "POST";
             form.target = "_blank";
             form.style.display = "none";
 
-            // 匹配你腾讯文档的3个字段，一一对应
-            const userInput = document.createElement("input");
-            userInput.type = "hidden";
-            userInput.name = FIELD_USER;
-            userInput.value = record.userName;
-            form.appendChild(userInput);
+            const u = document.createElement("input");
+            u.type = "hidden"; u.name = FIELD_USER; u.value = record.userName;
+            form.appendChild(u);
 
-            const timeInput = document.createElement("input");
-            timeInput.type = "hidden";
-            timeInput.name = FIELD_TIME;
-            timeInput.value = record.time;
-            form.appendChild(timeInput);
+            const t = document.createElement("input");
+            t.type = "hidden"; t.name = FIELD_TIME; t.value = record.time;
+            form.appendChild(t);
 
-            const actionInput = document.createElement("input");
-            actionInput.type = "hidden";
-            actionInput.name = FIELD_ACTION;
-            actionInput.value = record.action;
-            form.appendChild(actionInput);
+            const a = document.createElement("input");
+            a.type = "hidden"; a.name = FIELD_ACTION; a.value = record.action;
+            form.appendChild(a);
 
-            // 提交并移除表单
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
-
-            // 延迟避免提交过快被拦截
-            setTimeout(() => {
-                resolve(true);
-            }, 300);
+            setTimeout(resolve, 300);
         });
     }
 
-    // ========== 修复：补全你原代码里缺失的上传核心函数 ==========
-    async function doUpload(isAuto = false) {
-        if (!userName || trickRecords.length === 0) {
-            if (!isAuto) alert('暂无记录可上传！');
-            return;
-        }
-
-        // 只上传未上传过的新记录
-        const newRecords = trickRecords.slice(uploadedCount);
-        if (newRecords.length === 0) {
-            if (!isAuto) alert('所有记录均已上传，无需重复提交！');
-            return;
-        }
-
-        // 显示上传状态
-        if (!isAuto) {
-            autoTip.innerText = '正在上传...';
-            autoTip.style.display = 'block';
-        }
-
-        try {
-            let allSuccess = true;
-            // 循环提交每条记录
-            for (let record of newRecords) {
-                const success = await submitSingleRecord(record);
-                if (!success) allSuccess = false;
-            }
-
-            // 更新已上传数量
-            uploadedCount = trickRecords.length;
-            localStorage.setItem('uploadedCount', uploadedCount);
-
-            // 提示结果
-            if (!isAuto) {
-                alert(allSuccess ? '✅ 所有记录提交成功！请去腾讯文档「已填写」列表刷新查看' : '⚠️ 部分记录提交完成，可重试');
-            }
-        } catch (error) {
-            if (!isAuto) {
-                alert('❌ 提交失败，请检查网络后重试');
-            }
-            console.error('提交错误：', error);
-        } finally {
-            // 隐藏提示
-            autoTip.innerText = '自动检查中...';
-            if (!isAuto) {
-                setTimeout(() => {
-                    autoTip.style.display = 'none';
-                }, 2000);
-            }
-        }
-    }
-
-    // ========== 修复：补全你原代码里缺失的上传按钮点击事件 ==========
-    uploadRecordBtn.onclick = () => doUpload(false);
-
-    // ========== 修复：补全你原代码里缺失的自动检查函数 ==========
-    function startAutoCheck() {
-        // 每30秒自动检查是否有新记录
-        setInterval(() => {
-            const newRecords = trickRecords.slice(uploadedCount);
-            if (newRecords.length > 0) {
-                autoTip.style.display = 'block';
-                setTimeout(() => {
-                    autoTip.style.display = 'none';
-                }, 3000);
-            }
-        }, 30000);
-    }
-
-    // ========== 修复：窗口大小变化适配，修正变量作用域bug ==========
     window.addEventListener('resize', () => {
-        // 直接修改全局变量，不重新声明，避免按钮跑出屏幕
         maxLeft = window.innerWidth - btn.offsetWidth - 20;
         maxTop = window.innerHeight - btn.offsetHeight - 20;
     });
